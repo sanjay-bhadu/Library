@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @Log4j2
@@ -22,11 +23,15 @@ public class MyController {
     private BookRepo bookRepo;
     @Autowired
     private IssueRepo issueRepo;
-    @GetMapping("/book")
-    public List<Book> getBooks()
+    @GetMapping("/books")
+    public List<Book> getAllBooks()
     {
         log.info("The Books are accessed");
         return bookRepo.findAll();
+    }
+    @GetMapping("/book")
+    public List<Book> getAvailableBook(){
+        return bookRepo.findAll().stream().filter(s->s.isAvailable()).collect(Collectors.toList());
     }
     @PostMapping("/book")
     public Book addBook(@RequestBody Book book)
@@ -171,7 +176,7 @@ public class MyController {
     }
 
     @GetMapping("/issue")
-    public List<Issue> getIssue()
+    public List<Issue> getAllIssue()
     {
         try{
             log.info("The Issue list has been accessed");
@@ -183,6 +188,80 @@ public class MyController {
             return null;
         }
     }
-    
+    @GetMapping("/issue/{id}")
+    public Issue getIssue(@PathVariable String id)
+    {
+        try{
+            Issue temp=issueRepo.getById(Integer.parseInt(id));
+            if(temp!=null)
+            {
+                log.info("The issue with id : "+id+" has been accessed "+temp);
+                return temp;
+            }
+            else
+                throw new RuntimeException("The issue has not been found in the Database");
+        }
+        catch (Exception e)
+        {
+            log.error(e);
+            return null;
+        }
+    }
+
+    @PostMapping("/issue")
+    public Issue issueBook(@RequestParam int book_id,@RequestParam int customer_id)
+    {
+        try{
+            Customer customer=customerRepo.getById(customer_id);
+            Book book=bookRepo.getById(book_id);
+            if(book!=null && customer!=null)
+            {
+                book.setAvailable(false);
+                book=updateBook(String.valueOf(book_id),book);
+                Issue issue=new Issue();
+                issue.setBook(book);
+                issue.setCustomer(customer);
+                issueRepo.save(issue);
+                log.info("The Book "+book+" has been issued to "+customer);
+                return issue;
+            }
+            else if(book==null)
+                throw new RuntimeException("Book with id "+book_id+" is not present in the Database");
+            else if(customer==null)
+                throw new RuntimeException("Customer with id "+customer_id+" is not present in the Database");
+            else {
+                throw new RuntimeException("The Book with id "+book_id+" and customer with id "+customer_id+" is not present in Database");
+            }
+        }
+         catch (Exception e)
+         {
+             log.error(e);
+             return null;
+         }
+    }
+    @DeleteMapping("/return/{id}")
+    public String returnBook(@PathVariable String id)
+    {
+        try{
+            Issue issue=issueRepo.getById(Integer.parseInt(id));
+            if(issue!=null)
+            {
+                Book book= issue.getBook();
+                book.setAvailable(true);
+                book=updateBook(String.valueOf(book.getId()),book);
+                log.info("The Book has been returned "+book);
+                issueRepo.delete(issue);
+                return "The Book is successfully Returned";
+            }
+            else{
+                throw new RuntimeException("Tt is not been issued");
+            }
+        }
+        catch (Exception e)
+        {
+            log.error(e);
+            return e.getLocalizedMessage();
+        }
+    }
 
 }
