@@ -1,38 +1,55 @@
 package com.example.userDefined.Controller;
 
 import com.example.userDefined.Model.Book;
-import com.example.userDefined.Model.Customer;
 import com.example.userDefined.Model.Issue;
+import com.example.userDefined.Model.Student;
 import com.example.userDefined.Repo.BookRepo;
-import com.example.userDefined.Repo.CustomerRepo;
 import com.example.userDefined.Repo.IssueRepo;
+import com.example.userDefined.Repo.StudentRepo;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @Log4j2
 public class MyController {
 
     @Autowired
-    private CustomerRepo customerRepo;
+    private StudentRepo studentRepo;
     @Autowired
     private BookRepo bookRepo;
     @Autowired
     private IssueRepo issueRepo;
-    @GetMapping("/books")
+
+    @GetMapping(value = "/inventory",produces = MediaType.APPLICATION_JSON_VALUE)
+    public String inventory()
+    {
+        try {
+            List<Book> books = getAllBooks();
+            int available = 0;
+            int issue = 0;
+            for (Book m : books) {
+                available = available + m.getAvailable();
+                issue = issue + m.getIssued();
+            }
+            return books+"\n"+"Available Books: "+available+"\n"+"Issued Books: "+issue;
+        }
+        catch (Exception e)
+        {
+            log.error(e);
+            return e.getLocalizedMessage();
+        }
+    }
+    @GetMapping("/book")
     public List<Book> getAllBooks()
     {
         log.info("The Books are accessed");
         return bookRepo.findAll();
     }
-    @GetMapping("/book")
-    public List<Book> getAvailableBook(){
-        return bookRepo.findAll().stream().filter(s->s.isAvailable()).collect(Collectors.toList());
-    }
+
     @PostMapping("/book")
     public Book addBook(@RequestBody Book book)
     {
@@ -47,6 +64,7 @@ public class MyController {
             return null;
         }
     }
+
     @GetMapping("/book/{id}")
     public Book getABook(@PathVariable String id)
     {
@@ -87,15 +105,18 @@ public class MyController {
             return e.getLocalizedMessage();
         }
     }
+
     @PutMapping("/book/{id}")
     public Book updateBook(@PathVariable String id,@RequestBody Book book)
     {
         try{
             Book temp=bookRepo.getById(Integer.parseInt(id));
             if(temp!=null){
-                temp.setAvailable(book.isAvailable());
-                temp.setName(book.getName());
                 temp.setAuthor(book.getAuthor());
+                temp.setName(book.getName());
+                temp.setTotal(book.getTotal());
+                temp.setAvailable(book.getAvailable());
+                temp.setIssued(book.getIssued());
                 bookRepo.save(temp);
                 log.info("The Book with id: "+id+" has been updated to :"+temp);
                 return temp;
@@ -110,25 +131,26 @@ public class MyController {
             return null;
         }
     }
-    @GetMapping("/customer")
-    public List<Customer> getCustomer()
+
+    @GetMapping("/student")
+    public List<Student> getStudent()
     {
-        log.info("The All list of Customer has been Accessed");
-        return customerRepo.findAll();
+        log.info("The All list of Student has been Accessed");
+        return studentRepo.findAll();
     }
 
-    @GetMapping("/customer/{id}")
-    public Customer getCustomerById(@PathVariable String id)
+    @GetMapping("/student/{id}")
+    public Student getStudentById(@PathVariable String id)
     {
         try{
-            Customer temp=customerRepo.getById(Integer.parseInt(id));
+            Student temp=studentRepo.getById(Integer.parseInt(id));
             if(temp!=null)
             {
-                log.info("The customer has been accessed with id "+id+" and details "+temp);
+                log.info("The student has been accessed with id "+id+" and details "+temp);
                 return temp;
             }
             else
-                throw new RuntimeException("The customer is not present in the Database server");
+                throw new RuntimeException("The student is not present in the Database server");
         }
         catch (Exception e)
         {
@@ -137,13 +159,13 @@ public class MyController {
         }
     }
 
-    @PostMapping("/customer")
-    public Customer addCustomer(@RequestBody Customer customer)
+    @PostMapping("/student")
+    public Student addStudent(@RequestBody Student student)
     {
         try {
-            customerRepo.save(customer);
-            log.info("The new Customer has been added to the database... Customer: "+customer);
-            return customer;
+            studentRepo.save(student);
+            log.info("The new student has been added to the database... Student : "+student);
+            return student;
         }
         catch (Exception e)
         {
@@ -151,21 +173,22 @@ public class MyController {
             return null;
         }
     }
-    @PutMapping("/customer/{id}")
-    public Customer updateCustomer(@PathVariable String id,@RequestBody Customer customer)
+
+    @PutMapping("/student/{id}")
+    public Student updateStudent(@PathVariable String id,@RequestBody Student student)
     {
         try{
-            Customer temp=customerRepo.getById(Integer.parseInt(id));
+            Student temp=studentRepo.getById(Integer.parseInt(id));
             if(temp!=null)
             {
-                temp.setName(customer.getName());
-                temp.setEmail(customer.getEmail());
-                customerRepo.save(temp);
-                log.info("The Customer with id "+id+" has been updated: "+temp);
+                temp.setName(student.getName());
+                temp.setEmail(student.getEmail());
+                studentRepo.save(temp);
+                log.info("The Student with id "+id+" has been updated: "+temp);
                 return temp;
             }
             else {
-                throw new RuntimeException("The customer with id "+id+" is not present in Database");
+                throw new RuntimeException("The student with id "+id+" is not present in Database");
             }
         }
         catch (Exception e)
@@ -188,6 +211,7 @@ public class MyController {
             return null;
         }
     }
+
     @GetMapping("/issue/{id}")
     public Issue getIssue(@PathVariable String id)
     {
@@ -209,28 +233,29 @@ public class MyController {
     }
 
     @PostMapping("/issue")
-    public Issue issueBook(@RequestParam int book_id,@RequestParam int customer_id)
+    public Issue issueBook(@RequestParam int book_id,@RequestParam int student_id)
     {
         try{
-            Customer customer=customerRepo.getById(customer_id);
+            Student student=studentRepo.getById(student_id);
             Book book=bookRepo.getById(book_id);
-            if(book!=null && customer!=null)
+            if(book!=null && student!=null && book.getAvailable()>=1)
             {
-                book.setAvailable(false);
+                book.setAvailable(book.getAvailable()-1);
+                book.setIssued(book.getIssued()+1);
                 book=updateBook(String.valueOf(book_id),book);
                 Issue issue=new Issue();
                 issue.setBook(book);
-                issue.setCustomer(customer);
+                issue.setStudent(student);
                 issueRepo.save(issue);
-                log.info("The Book "+book+" has been issued to "+customer);
+                log.info("The Book "+book+" has been issued to "+student);
                 return issue;
             }
             else if(book==null)
                 throw new RuntimeException("Book with id "+book_id+" is not present in the Database");
-            else if(customer==null)
-                throw new RuntimeException("Customer with id "+customer_id+" is not present in the Database");
+            else if(student==null)
+                throw new RuntimeException("Student with id "+student_id+" is not present in the Database");
             else {
-                throw new RuntimeException("The Book with id "+book_id+" and customer with id "+customer_id+" is not present in Database");
+                throw new RuntimeException("The Book with id "+book_id+" and customer with id "+student_id+" is not available for the issue");
             }
         }
          catch (Exception e)
@@ -239,28 +264,71 @@ public class MyController {
              return null;
          }
     }
-    @DeleteMapping("/return/{id}")
-    public String returnBook(@PathVariable String id)
+
+    @DeleteMapping("/return/{book_id}")
+    public String returnBook(@PathVariable String book_id,@RequestParam String student_id)
     {
         try{
-            Issue issue=issueRepo.getById(Integer.parseInt(id));
-            if(issue!=null)
+            List<Issue> issue=issueRepo.findIssueByBookId(Integer.parseInt(book_id));
+            if(!issue.isEmpty())
             {
-                Book book= issue.getBook();
-                book.setAvailable(true);
-                book=updateBook(String.valueOf(book.getId()),book);
-                log.info("The Book has been returned "+book);
-                issueRepo.delete(issue);
-                return "The Book is successfully Returned";
+                Issue temp=null;
+                for(Issue i: issue)
+                {
+                    if(i.getStudent().getId()==Integer.parseInt(student_id))
+                    {
+                        temp=i;
+                        break;
+                    }
+                }
+                if(temp!=null)
+                {
+                    Book book=temp.getBook();
+                    book.setAvailable(book.getAvailable()+1);
+                    book.setIssued(book.getIssued()-1);
+                    book=updateBook(String.valueOf(book.getId()),book);
+                    log.info("The Book has been returned "+book);
+                    issueRepo.delete(temp);
+                    return "The Book is successfully Returned";
+                }
+                else {
+                    throw new RuntimeException("The Book with "+book_id+" is not issued to "+student_id);
+                }
             }
             else{
-                throw new RuntimeException("Tt is not been issued");
+                throw new RuntimeException("It is not been issued");
             }
         }
         catch (Exception e)
         {
             log.error(e);
             return e.getLocalizedMessage();
+        }
+    }
+
+    @GetMapping("/issueStudent/{id}")
+    public List<Book> getBookByStudent(@PathVariable int id)
+    {
+        try{
+           return issueRepo.findByStudentId(id);
+        }
+        catch (Exception e)
+        {
+            log.error(e);
+            return null;
+        }
+    }
+
+    @GetMapping("/issueBook/{id}")
+    public List<Student> getStudentByBook(@PathVariable int id)
+    {
+        try{
+            return issueRepo.findByBookId(id);
+        }
+        catch (Exception e)
+        {
+            log.error(e);
+            return null;
         }
     }
 

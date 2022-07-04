@@ -12,15 +12,15 @@ public class Issue {
     @JoinColumn(name = "book_id")
     private Book book;
     @ManyToOne
-    @JoinColumn(name = "customer_id")
-    private Customer customer;
+    @JoinColumn(name = "student_id")
+    private Student student;
 
-    public Customer getCustomer() {
-        return customer;
+    public Student getStudent() {
+        return student;
     }
 
-    public void setCustomer(Customer customer) {
-        this.customer = customer;
+    public void setStudent(Student student) {
+        this.student = student;
     }
 
     public Book getBook() {
@@ -42,9 +42,9 @@ public class Issue {
     @Override
     public String toString() {
         return "Issue{" +
-                "id=" + id +
-                ", book=" + book +
-                ", customer=" + customer +
-                '}';
+                "id=" + id +"\n"+
+                ", book=" + book +"\n"+
+                ", student=" + student +
+                '}'+"\n";
     }
 }
