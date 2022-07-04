@@ -20,10 +20,6 @@ public class Book {
         return id;
     }
 
-    public void setId(int id) {
-        this.id = id;
-    }
-
     public String getName() {
         return name;
     }
@@ -56,5 +52,9 @@ public class Book {
                 ", author='" + author + '\'' +
                 ", available=" + available +
                 '}';
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 }
