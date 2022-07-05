@@ -3,7 +3,7 @@ package com.example.userDefined.Model;
 import javax.persistence.*;
 
 @Entity
-@Table(name="Book")
+@Table(name="Books")
 public class Book {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -13,15 +13,39 @@ public class Book {
     private String name;
     @Column(name="author")
     private String author;
+    @Column(name="total")
+    private int total;
     @Column(name="available")
-    private boolean available;
+    private int available;
+    @Column(name="issued")
+    private int issued;
+
+    public int getTotal() {
+        return total;
+    }
+
+    public void setTotal(int total) {
+        this.total = total;
+    }
+
+    public int getAvailable() {
+        return available;
+    }
+
+    public void setAvailable(int available) {
+        this.available = available;
+    }
+
+    public int getIssued() {
+        return issued;
+    }
+
+    public void setIssued(int issued) {
+        this.issued = issued;
+    }
 
     public int getId() {
         return id;
-    }
-
-    public void setId(int id) {
-        this.id = id;
     }
 
     public String getName() {
@@ -40,12 +64,9 @@ public class Book {
         this.author = author;
     }
 
-    public boolean isAvailable() {
-        return available;
-    }
 
-    public void setAvailable(boolean available) {
-        this.available = available;
+    public void setId(int id) {
+        this.id = id;
     }
 
     @Override
@@ -54,7 +75,9 @@ public class Book {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", author='" + author + '\'' +
+                ", total=" + total +
                 ", available=" + available +
+                ", issued=" + issued +
                 '}';
     }
 }
